@@ -48,3 +48,7 @@ docs-build:
 
 {% endif -%}
 all: format lint test
+
+# Pull improvements from the latest template version (3-way merge).
+template-update:
+    uvx copier update

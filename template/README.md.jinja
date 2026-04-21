@@ -1,5 +1,14 @@
 # {{ project_name }}
 
+{% if variant == "library" and open_source -%}
+[![CI](https://github.com/{{ github_username }}/{{ package_name }}/actions/workflows/test.yml/badge.svg)](https://github.com/{{ github_username }}/{{ package_name }}/actions/workflows/test.yml)
+[![PyPI](https://img.shields.io/pypi/v/{{ package_name }}.svg)](https://pypi.org/project/{{ package_name }}/)
+[![Python](https://img.shields.io/pypi/pyversions/{{ package_name }}.svg)](https://pypi.org/project/{{ package_name }}/)
+{% if license != "Proprietary" -%}
+[![License](https://img.shields.io/badge/license-{{ license }}-blue.svg)](./LICENSE)
+{%- endif %}
+
+{% endif -%}
 {{ description }}
 
 ## Install

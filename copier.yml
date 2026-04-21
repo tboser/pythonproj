@@ -97,6 +97,7 @@ _exclude:
   - "{% if variant != 'library' %}CONTRIBUTING.md{% endif %}"
   - "{% if variant != 'library' %}.github/workflows/release.yml{% endif %}"
   - "{% if variant != 'library' %}.github/workflows/docs.yml{% endif %}"
+  - "{% if variant != 'library' %}CODE_OF_CONDUCT.md{% endif %}"
   # App-only assets
   - "{% if variant != 'app' %}Dockerfile{% endif %}"
   - "{% if variant != 'app' %}compose.yaml{% endif %}"

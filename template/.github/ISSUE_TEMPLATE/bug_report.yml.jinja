@@ -1,0 +1,42 @@
+name: Bug report
+description: Report a defect in {{ project_name }}
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the bug in one or two sentences.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal reproducer
+      description: The smallest code snippet or command sequence that reproduces the bug.
+      render: python
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: |
+        - {{ project_name }} version (from `uv run python -c "import {{ package_name }}; print({{ package_name }}.__version__)"`)
+        - Python version (from `python --version`)
+        - OS
+      value: |
+        - {{ project_name }} version:
+        - Python version:
+        - OS:
+    validations:
+      required: true

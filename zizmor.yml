@@ -1,0 +1,10 @@
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        "actions/*": ref-pin
+        "astral-sh/*": ref-pin
+        "codecov/*": ref-pin
+        "pypa/*": ref-pin
+        "woodruffw/*": ref-pin
+        "*": hash-pin

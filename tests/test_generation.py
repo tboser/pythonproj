@@ -25,10 +25,24 @@ skip_no_just = pytest.mark.skipif(not _have("just"), reason="just not installed"
 skip_no_uv = pytest.mark.skipif(not _have("uv"), reason="uv not installed")
 
 
+def _stage_template_source(tmp_path: Path) -> Path:
+    """Copy the template to a non-git tmpdir so run_copy uses the working tree,
+    not the last committed ref. Lets us iterate without committing first."""
+    staged = tmp_path / "_template_source"
+    shutil.copytree(
+        TEMPLATE_ROOT,
+        staged,
+        ignore=shutil.ignore_patterns(".git", ".venv", "__pycache__", ".pytest_cache"),
+        symlinks=True,
+    )
+    return staged
+
+
 def _generate(tmp_path: Path, variant: str, package: str = "acme") -> Path:
+    src = _stage_template_source(tmp_path)
     dst = tmp_path / package
     run_copy(
-        src_path=str(TEMPLATE_ROOT),
+        src_path=str(src),
         dst_path=str(dst),
         data={
             "variant": variant,
@@ -80,11 +94,18 @@ def test_generated_project_has_expected_files(tmp_path: Path, variant: str) -> N
         "README.md",
         "AGENTS.md",
         "CLAUDE.md",
+        "SECURITY.md",
+        ".editorconfig",
         ".pre-commit-config.yaml",
         ".python-version",
         ".gitignore",
         "LICENSE",
         ".github/PULL_REQUEST_TEMPLATE.md",
+        ".github/CODEOWNERS",
+        ".github/dependabot.yml",
+        ".github/ISSUE_TEMPLATE/bug_report.yml",
+        ".github/ISSUE_TEMPLATE/feature_request.yml",
+        ".github/ISSUE_TEMPLATE/config.yml",
         ".github/workflows/lint.yml",
         ".github/workflows/test.yml",
         "src/myproj/__init__.py",
@@ -99,6 +120,7 @@ def test_generated_project_has_expected_files(tmp_path: Path, variant: str) -> N
         "docs/index.md",
         "CHANGELOG.md",
         "CONTRIBUTING.md",
+        "CODE_OF_CONDUCT.md",
         ".readthedocs.yaml",
         ".github/workflows/release.yml",
         ".github/workflows/docs.yml",

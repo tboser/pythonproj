@@ -6,6 +6,7 @@ rules:
         "amannn/*": ref-pin
         "astral-sh/*": ref-pin
         "codecov/*": ref-pin
+        "CodSpeedHQ/*": ref-pin
         "pypa/*": ref-pin
         "woodruffw/*": ref-pin
         "*": hash-pin

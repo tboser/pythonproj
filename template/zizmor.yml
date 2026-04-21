@@ -3,6 +3,7 @@ rules:
     config:
       policies:
         "actions/*": ref-pin
+        "amannn/*": ref-pin
         "astral-sh/*": ref-pin
         "codecov/*": ref-pin
         "pypa/*": ref-pin

@@ -1,0 +1,10 @@
+* text=auto eol=lf
+
+*.py text diff=python
+
+*.png binary
+*.jpg binary
+*.pdf binary
+
+uv.lock linguist-generated
+template/** linguist-language=Jinja

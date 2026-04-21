@@ -199,6 +199,25 @@ The `Release` workflow runs automatically:
 trusted publisher for your package pointing at `{github_username}/{package}`,
 workflow `release.yml`, environment `pypi`.
 
+**Optional — Codecov coverage upload.** The generated `test.yml` workflow
+uploads coverage to [Codecov](https://about.codecov.io/). As of 2025, Codecov
+requires a token for **public** repositories (previously tokenless). The
+upload is configured with `fail_ci_if_error: false`, so not setting this up
+doesn't break CI — you just don't get coverage dashboards.
+
+To enable:
+
+1. Sign up at codecov.io with your GitHub account and install the app on your repo
+2. Copy the upload token from the repo settings on Codecov
+3. Add it to your GitHub repo as a secret named `CODECOV_TOKEN`:
+   ```bash
+   gh secret set CODECOV_TOKEN --repo {github_username}/{package}
+   ```
+4. Next CI run will publish coverage; add a Codecov badge to your README if you want
+
+If you don't care about coverage dashboards, ignore this — the workflow will
+no-op on the upload step.
+
 ### Library: docs
 
 ```bash

@@ -56,7 +56,7 @@ uv run pytest          # runs generation tests: generates each variant into a tm
 
 Cookiecutter generates once and you're on your own. Copier supports
 `copier update` — template improvements propagate to already-generated
-projects with a 3-way merge. That's the whole ballgame.
+projects with a 3-way merge. That's the deciding feature.
 
 ## License
 

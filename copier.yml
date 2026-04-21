@@ -94,7 +94,6 @@ _exclude:
   - "copier.yml"
   - "*.pyc"
   - "__pycache__"
-  - ".copier-answers.yml.jinja"
   # Library-only assets
   - "{% if variant != 'library' %}docs{% endif %}"
   - "{% if variant != 'library' %}mkdocs.yml{% endif %}"

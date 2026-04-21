@@ -1,0 +1,19 @@
+"""Application settings — loaded from environment variables or .env file."""
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    """Configuration for {{ project_name }}."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    debug: bool = False
+    """Enable verbose logging and development-mode behavior."""
+
+
+settings = Settings()

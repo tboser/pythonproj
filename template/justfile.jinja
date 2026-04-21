@@ -1,0 +1,50 @@
+default:
+    @just --list
+
+install:
+    uv sync --all-extras
+    uv run pre-commit install
+
+sync:
+    uv sync --all-extras
+
+lint:
+    uv run ruff check .
+    uv run ruff format --check .
+    uv run ty check
+
+lint-fix:
+    uv run ruff check --fix .
+    uv run ruff format .
+
+format:
+    uv run ruff format .
+
+test:
+    uv run pytest
+
+test-v:
+    uv run pytest -v
+
+test-cov:
+    uv run pytest --cov --cov-report=term-missing
+
+test-cov-html:
+    uv run pytest --cov --cov-report=html
+    @echo "Coverage report: htmlcov/index.html"
+
+snapshot-create:
+    uv run pytest --inline-snapshot=create
+
+snapshot-fix:
+    uv run pytest --inline-snapshot=fix
+
+{% if variant == "library" -%}
+docs:
+    uv run mkdocs serve
+
+docs-build:
+    uv run mkdocs build --strict
+
+{% endif -%}
+all: format lint test

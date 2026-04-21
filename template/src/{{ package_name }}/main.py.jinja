@@ -1,0 +1,12 @@
+"""Entry point for {{ project_name }}."""
+
+from {{ package_name }}.settings import settings
+
+
+def main() -> None:
+    """Run the application."""
+    print(f"{{ project_name }} starting (debug={settings.debug})")
+
+
+if __name__ == "__main__":
+    main()

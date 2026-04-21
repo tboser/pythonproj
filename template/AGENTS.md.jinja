@@ -1,0 +1,297 @@
+# AGENTS.md
+
+This file is the contract between humans, LLM agents, and this codebase.
+It describes how code is written here and how contributions get merged.
+It is the canonical agent-guidance file; `CLAUDE.md` is a symlink to this file.
+
+## Environment
+
+Use **uv** for all Python tooling. Never invoke `pip` or `python` directly.
+
+```bash
+uv sync --all-extras      # install dependencies (once, and after changing pyproject.toml)
+uv run pytest             # run commands inside the project venv
+uv run ruff check .
+```
+
+Use **just** for the common developer loop:
+
+```bash
+just install   # uv sync + pre-commit install
+just lint      # ruff check + ruff format --check + ty check
+just lint-fix  # auto-fix + reformat
+just test      # pytest
+just all       # format + lint + test
+```
+
+Shell commands as recipe aliases belong in the `justfile`. Once a command
+outgrows a shell wrapper — needs environment resolution, Python APIs, or
+branching logic — graduate it to a cyclopts CLI under `src/{{ package_name }}/dev.py`
+(or a dedicated `dev/` package). Keep simple aliases in `justfile`.
+
+## AI contribution rules
+
+1. **Never add yourself (Claude, GPT, any model) as a co-author on commits.**
+   Commits are human-authored. Attribution belongs to the human reviewer who
+   stands behind the code.
+
+2. **Before starting non-trivial work, confirm scope.**
+   If the requirements are vague, the issue is ambiguous, or the public API
+   surface is unclear, surface that to the human before writing code.
+   A short clarifying question beats a large wrong PR.
+
+3. **Flag API / breaking-change decisions to a human.**
+   Don't unilaterally change public function signatures, remove public
+   exports, or alter documented behavior. Propose the change and wait.
+
+4. **Review your own diff line-by-line before handing back.**
+   Every PR that lands must have the human author attest they've reviewed
+   each line and stand by it (see `.github/PULL_REQUEST_TEMPLATE.md`).
+
+5. **No dead code, no commented-out code, no speculative abstractions.**
+   If a function isn't called, delete it. If you disabled a block of code,
+   delete it. If you're tempted to add an abstraction for "future use",
+   don't — wait until there are three concrete call sites.
+
+## Secrets & configuration
+
+**Never commit API keys or secrets.** Use `pydantic-settings` for config:
+
+```python
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+    )
+
+    api_key: str
+    """API key for external services."""
+
+    debug: bool = False
+    """Enable debug mode."""
+```
+
+- Store secrets in `.env` (gitignored).
+- Commit `.env.example` documenting required variables.
+- Environment variables override `.env` values.
+
+## Python style
+
+### Type safety
+
+Use full type annotations everywhere, including in tests. Use Python {{ python_version }}+
+syntax (`type X = ...`, `X | None`). Avoid `Any` and `# type: ignore` — they
+are a code smell, not a tool. Use `cast()` as a last resort only.
+
+```python
+def process_users(users: list[User]) -> dict[str, int]:
+    return {user.name: user.age for user in users}
+
+type UserID = int
+type UserMap = dict[UserID, User]
+```
+
+### No `getattr` / `hasattr`
+
+These bypass the type system. Use direct attribute access with proper typing.
+
+```python
+# Bad
+value = getattr(obj, "name", None)
+if hasattr(obj, "process"):
+    obj.process()
+
+# Good
+class Config:
+    name: str | None = None
+
+if config.name is not None:
+    process(config.name)
+```
+
+### Enums and Literals for constrained values
+
+Any value with a fixed set of options must be an `Enum` or `Literal`.
+
+```python
+from enum import Enum
+from typing import Literal
+
+class Status(str, Enum):
+    PENDING = "pending"
+    ACTIVE = "active"
+    COMPLETED = "completed"
+
+ModelName = Literal["gpt-4o", "gpt-4o-mini", "claude-3-sonnet"]
+```
+
+### Registry pattern over if-else chains
+
+Avoid `if method == "a": ... elif method == "b": ...` chains that dispatch
+on a type or string. Use a dict keyed by an Enum.
+
+```python
+HANDLER_REGISTRY: dict[Method, Handler] = {
+    Method.A: a_handler,
+    Method.B: b_handler,
+    Method.C: c_handler,
+}
+
+def get_handler(method: Method) -> Handler:
+    if method not in HANDLER_REGISTRY:
+        raise ValueError(f"Unknown method: {method}")
+    return HANDLER_REGISTRY[method]
+```
+
+### Dataclasses / Pydantic over raw dicts
+
+Named, typed structures beat `dict[str, Any]`. Use `@dataclass` for internal
+data, `pydantic.BaseModel` for anything crossing a boundary (API, config, I/O).
+
+### No inline comments. Use docstrings.
+
+Describe behavior in docstrings on functions, classes, and attributes.
+Inline comments explaining *what* the code does are forbidden — well-named
+identifiers do that job. Inline comments are acceptable only when they
+document a non-obvious *why* (a workaround, an invariant, a surprising
+constraint).
+
+```python
+class User:
+    """Represents a system user."""
+
+    name: str
+    """The user's display name."""
+
+    email: str
+    """Primary contact email address."""
+
+def calculate_total(items: list[Item]) -> Decimal:
+    """
+    Calculate the total price of all items.
+
+    Applies discounts and tax based on item categories.
+    """
+```
+
+### No inline imports
+
+All imports at the top of the file.
+
+```python
+# Bad
+def process_user(user_id: int) -> User:
+    from src.models import User
+    return User.get(user_id)
+
+# Good — import at top
+from src.models import User
+
+def process_user(user_id: int) -> User:
+    return User.get(user_id)
+```
+
+**Exception:** CLI entry points may defer heavy-dependency imports into
+command functions to improve startup time.
+
+### Short, single-purpose functions
+
+Write small functions with descriptive names. If a function exceeds ~50
+lines or does more than one thing, split it.
+
+### Layout
+
+```
+src/{{ package_name }}/
+├── lib/          # Reusable utilities across domains
+├── models/       # Pydantic models / dataclasses (data structures)
+└── config.py     # Application settings (if app variant)
+```
+
+## Testing
+
+### Philosophy
+
+Write extensive unit tests. For complex features, prefer TDD: failing test
+first, implement, verify green.
+
+### Fast tests
+
+- No I/O, network, or sleeps in unit tests.
+- Use `pytest.mark.parametrize` instead of duplicating test bodies.
+- Keep each test focused on a single behavior.
+
+### Fixtures vs factory functions
+
+- **Fixtures**: shared complex setup, teardown, or the common default used
+  by most tests.
+- **Factory functions**: each test needs different config.
+- **Direct instantiation**: trivial setup.
+
+```python
+def make_user(name: str = "Alice", age: int = 30) -> User:
+    return User(name=name, age=age, email=f"{name.lower()}@example.com")
+
+def test_user_adult():
+    user = make_user(age=25)
+    assert user.is_adult()
+```
+
+### External APIs — VCRpy + inline-snapshot + dirty-equals
+
+Record HTTP interactions with `vcrpy`; snapshot expected values with
+`inline-snapshot`; match flexibly with `dirty-equals`:
+
+```python
+import vcr
+from inline_snapshot import snapshot
+from dirty_equals import IsPositiveInt, IsNow, IsPartialDict
+
+my_vcr = vcr.VCR(
+    cassette_library_dir="tests/cassettes",
+    record_mode="once",
+    filter_headers=["authorization", "x-api-key"],
+)
+
+@my_vcr.use_cassette("api_call.yaml")
+def test_api_call():
+    response = client.make_request()
+    assert response.data == snapshot()
+    assert response.metadata == {
+        "id": IsPositiveInt,
+        "created_at": IsNow(delta=3),
+        "tags": IsPartialDict({"env": "test"}),
+    }
+```
+
+Cassettes live in `tests/cassettes/`. Always filter auth headers. Review
+cassette diffs in PRs for unintended API-shape changes.
+
+### Snapshot workflow
+
+```bash
+just test                     # run tests (snapshots are frozen)
+just snapshot-create          # first-time: write new snapshots
+just snapshot-fix             # update snapshots after intentional changes
+```
+
+Review snapshot diffs in PRs — they are test assertions.
+
+### Test organization
+
+- `tests/` mirrors `src/{{ package_name }}/` 1:1. Every source module has a
+  matching `test_<module>.py`.
+- Shared fixtures go in `conftest.py`. Keep them domain-specific — don't
+  build a fixture menagerie.
+
+## Linting
+
+```bash
+just lint      # ruff check + ruff format --check + ty check
+just lint-fix  # auto-fix + reformat
+```
+
+Fix all lint errors before committing. `pre-commit` runs `ruff check --fix`
+and `ruff format` automatically.

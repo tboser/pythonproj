@@ -1,0 +1,34 @@
+"""{{ project_name }} CLI."""
+
+from __future__ import annotations
+
+import cyclopts
+
+from {{ package_name }} import __version__
+
+app = cyclopts.App(
+    name="{{ package_name }}",
+    help="{{ description or project_name }}",
+    version=__version__,
+)
+
+
+@app.default
+def main() -> None:
+    """Default command — shows help."""
+    app.help_print()
+
+
+@app.command
+def version() -> None:
+    """Print the installed version."""
+    print(__version__)
+
+
+def launch() -> None:
+    """CLI entry point (installed as a console script)."""
+    app()
+
+
+if __name__ == "__main__":
+    launch()

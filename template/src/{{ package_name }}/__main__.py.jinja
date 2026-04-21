@@ -1,0 +1,13 @@
+"""Entry point for `python -m {{ package_name }}`."""
+
+{% if variant == "cli" -%}
+from {{ package_name }}.cli import launch
+
+if __name__ == "__main__":
+    launch()
+{%- else -%}
+from {{ package_name }}.main import main
+
+if __name__ == "__main__":
+    main()
+{%- endif %}

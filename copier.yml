@@ -1,0 +1,135 @@
+_min_copier_version: "9.3.0"
+_subdirectory: template
+_answers_file: .copier-answers.yml
+_templates_suffix: .jinja
+
+_jinja_extensions:
+  - jinja2.ext.do
+  - jinja2.ext.loopcontrols
+
+# ------- Questions ---------------------------------------------------------
+
+variant:
+  type: str
+  help: What kind of Python project are you scaffolding?
+  choices:
+    Library (PyPI-publishable): library
+    Application / service: app
+    CLI tool: cli
+  default: library
+
+project_name:
+  type: str
+  help: Human-readable project name (e.g., "My Cool Library")
+  validator: >-
+    {% if not project_name %}project_name cannot be empty{% endif %}
+
+package_name:
+  type: str
+  help: Python package name (lowercase, underscores, importable)
+  default: "{{ project_name | lower | replace(' ', '_') | replace('-', '_') }}"
+  validator: >-
+    {% if not (package_name | regex_search('^[a-z][a-z0-9_]*$')) %}
+    Must be lowercase, start with a letter, and contain only letters, digits, and underscores.
+    {% endif %}
+
+description:
+  type: str
+  help: Short one-line description
+  default: ""
+
+author_name:
+  type: str
+  help: Your name (defaults to `git config user.name`)
+  default: "Thomas Boser"
+
+author_email:
+  type: str
+  help: Your email
+  default: "thomas@reducto.ai"
+
+github_username:
+  type: str
+  help: GitHub username or organization that will own the repo
+  default: tboser
+
+python_version:
+  type: str
+  help: Minimum Python version
+  choices:
+    - "3.13"
+    - "3.12"
+  default: "3.13"
+
+license:
+  type: str
+  help: License
+  choices:
+    - MIT
+    - Apache-2.0
+    - Proprietary
+  default: MIT
+
+open_source:
+  type: bool
+  help: Open-source on GitHub (enables PyPI release workflow, docs hosting)?
+  default: true
+  when: "{{ variant == 'library' }}"
+
+include_claude_review:
+  type: bool
+  help: Include the Claude auto-review GitHub Action (requires ANTHROPIC_API_KEY repo secret)?
+  default: false
+
+# Copyright year used in LICENSE. Hidden from the user; update when you cut
+# a template release for the new year (or override with `--data year=YYYY`).
+year:
+  type: str
+  default: "2026"
+  when: false
+
+# ------- Exclusions (variant-specific file gating) -------------------------
+
+_exclude:
+  - "copier.yml"
+  - "*.pyc"
+  - "__pycache__"
+  - ".copier-answers.yml.jinja"
+  # Library-only assets
+  - "{% if variant != 'library' %}docs{% endif %}"
+  - "{% if variant != 'library' %}mkdocs.yml{% endif %}"
+  - "{% if variant != 'library' %}.readthedocs.yaml{% endif %}"
+  - "{% if variant != 'library' %}CHANGELOG.md{% endif %}"
+  - "{% if variant != 'library' %}CONTRIBUTING.md{% endif %}"
+  - "{% if variant != 'library' %}.github/workflows/release.yml{% endif %}"
+  - "{% if variant != 'library' %}.github/workflows/docs.yml{% endif %}"
+  # App-only assets
+  - "{% if variant != 'app' %}Dockerfile{% endif %}"
+  - "{% if variant != 'app' %}compose.yaml{% endif %}"
+  - "{% if variant != 'app' %}.env.example{% endif %}"
+  - "{% if variant != 'app' %}src/{{ package_name }}/settings.py{% endif %}"
+  - "{% if variant != 'app' %}src/{{ package_name }}/main.py{% endif %}"
+  # CLI-only assets
+  - "{% if variant != 'cli' %}src/{{ package_name }}/cli.py{% endif %}"
+  # __main__.py is included for app and cli, not library
+  - "{% if variant == 'library' %}src/{{ package_name }}/__main__.py{% endif %}"
+  # Optional claude-review workflow
+  - "{% if not include_claude_review %}.github/workflows/claude-review.yml{% endif %}"
+
+# ------- Post-generation tasks --------------------------------------------
+
+_tasks:
+  # CLAUDE.md is a symlink to AGENTS.md — canonical agent guidance lives in one file.
+  # Copier doesn't preserve symlinks in templates; create it at generation time.
+  - "ln -sf AGENTS.md CLAUDE.md"
+  - "git init -q -b main"
+  - "uv sync --all-extras"
+  - "uv run pre-commit install"
+  - |
+    echo ""
+    echo "[OK] Project '{{ project_name }}' scaffolded."
+    echo "Next:"
+    echo "  cd {{ _copier_conf.dst_path }}"
+    echo "  just lint    # ruff + ty"
+    echo "  just test"
+    echo ""

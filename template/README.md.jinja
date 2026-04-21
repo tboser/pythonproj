@@ -1,0 +1,57 @@
+# {{ project_name }}
+
+{{ description }}
+
+## Install
+
+```bash
+{%- if variant == "library" and open_source %}
+pip install {{ package_name }}
+# or, inside a project:
+uv add {{ package_name }}
+{%- else %}
+uv sync --all-extras
+{%- endif %}
+```
+
+## Quick start
+
+{% if variant == "library" -%}
+```python
+from {{ package_name }} import __version__
+print(__version__)
+```
+{%- elif variant == "app" -%}
+```bash
+cp .env.example .env
+# edit .env with your config
+uv run python -m {{ package_name }}
+```
+{%- elif variant == "cli" -%}
+```bash
+uv run {{ package_name }} --help
+```
+{%- endif %}
+
+## Development
+
+```bash
+just install   # sync deps + install pre-commit hooks
+just lint      # ruff check + format check + ty check
+just test      # pytest
+just all       # format + lint + test
+```
+
+Contributor and agent guidance lives in [`AGENTS.md`](./AGENTS.md) (and its
+symlink `CLAUDE.md`). Read it before contributing or running a coding agent
+on this repo.
+
+{% if license != "Proprietary" -%}
+## License
+
+{{ license }} — see [LICENSE](./LICENSE).
+{%- else -%}
+## License
+
+Proprietary. All rights reserved.
+{%- endif %}

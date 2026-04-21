@@ -1,0 +1,30 @@
+# Contributing
+
+Thanks for considering a contribution. The short version:
+
+1. **Read [`AGENTS.md`](./AGENTS.md).** It's the canonical style and testing
+   guide. `CLAUDE.md` is a symlink to it.
+2. **Prerequisites**: Python {{ python_version }}+, [uv](https://docs.astral.sh/uv/),
+   [just](https://github.com/casey/just).
+3. **Fork, branch, open a PR.** CI must pass.
+
+## Workflow
+
+```bash
+git clone https://github.com/YOUR_USERNAME/{{ package_name }}
+cd {{ package_name }}
+just install     # uv sync + pre-commit install
+just all         # format + lint + test
+```
+
+## Opening a PR
+
+- Fill out the PR template — especially the "AI-generated code reviewed
+  line-by-line" checkbox.
+- Keep PRs focused. One concern per PR.
+- The PR title will appear in the release changelog — make it read well.
+
+## Reporting bugs
+
+Open an issue with a minimal reproducer. If the bug involves an external API,
+include the VCR cassette or the relevant request/response.

@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.ty_cache/
+*.egg-info/
+
+# Template-testing artifacts
+.test-generated/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Claude Code local overrides
+.claude/settings.local.json

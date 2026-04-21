@@ -60,7 +60,7 @@ hook, CI workflows (lint + test, both with `concurrency: cancel-in-progress`).
 | [`pytest`](https://docs.pytest.org/)                                              | test runner                            |
 | [`inline-snapshot`](https://15r10nk.github.io/inline-snapshot/)                   | assertion snapshotting                 |
 | [`dirty-equals`](https://dirty-equals.helpmanual.io/)                             | flexible equality matchers             |
-| [`vcrpy`](https://vcrpy.readthedocs.io/)                                          | HTTP recording for external-API tests  |
+| [`pytest-recording`](https://github.com/kiwicom/pytest-recording)                 | HTTP recording for external-API tests (pytest wrapper over VCRpy) |
 | [`just`](https://github.com/casey/just)                                           | task runner                            |
 | [`pydantic-settings`](https://docs.pydantic.dev/latest/concepts/pydantic_settings/) | config loader (app variant)          |
 | [`cyclopts`](https://cyclopts.readthedocs.io/)                                    | CLI framework (cli variant)            |
@@ -143,22 +143,30 @@ not by code, but it's the rule.
 **Fast unit tests** — no I/O, no network, no sleeps. Use `pytest.mark.parametrize`
 rather than duplicating test bodies.
 
-**External APIs** — combine `vcrpy` (records real HTTP to YAML cassettes),
+**External APIs** — combine `pytest-recording` (pytest wrapper over VCRpy
+that records real HTTP to YAML cassettes, auto-named after the test),
 `inline-snapshot` (expected values auto-write into your test code), and
 `dirty-equals` (flexible matchers for timestamps, IDs, ranges).
 
 ```python
-import vcr
+# tests/conftest.py
+import pytest
+
+@pytest.fixture(scope="module")
+def vcr_config():
+    return {
+        "filter_headers": ["authorization", "x-api-key"],
+        "record_mode": "once",
+    }
+```
+
+```python
+# tests/test_client.py
+import pytest
 from inline_snapshot import snapshot
 from dirty_equals import IsPositiveInt, IsNow
 
-my_vcr = vcr.VCR(
-    cassette_library_dir="tests/cassettes",
-    record_mode="once",
-    filter_headers=["authorization", "x-api-key"],
-)
-
-@my_vcr.use_cassette("get_user.yaml")
+@pytest.mark.vcr
 def test_get_user():
     response = client.get_user(42)
     assert response.body == snapshot()        # inline-snapshot auto-fills this
@@ -166,8 +174,11 @@ def test_get_user():
     assert response.fetched_at == IsNow(delta=3)
 ```
 
-First run: `just snapshot-create` — writes the `snapshot()` values into your test file.
-After intentional changes: `just snapshot-fix` — updates snapshots.
+Cassettes save to `tests/cassettes/<test_module>/<test_name>.yaml` automatically.
+
+First run: `just snapshot-create` writes the `snapshot()` values into your test
+file. After intentional API changes: `just snapshot-fix` updates snapshots.
+Re-record a cassette: delete its file and rerun, or `pytest --record-mode=all`.
 Never edit `snapshot(...)` values by hand.
 
 ### Library: cutting a release

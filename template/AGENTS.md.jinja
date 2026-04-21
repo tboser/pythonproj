@@ -239,24 +239,35 @@ def test_user_adult():
     assert user.is_adult()
 ```
 
-### External APIs — VCRpy + inline-snapshot + dirty-equals
+### External APIs — pytest-recording + inline-snapshot + dirty-equals
 
-Record HTTP interactions with `vcrpy`; snapshot expected values with
-`inline-snapshot`; match flexibly with `dirty-equals`:
+Record HTTP interactions with [`pytest-recording`](https://github.com/kiwicom/pytest-recording)
+(pytest wrapper around VCRpy that auto-names cassettes from the test);
+snapshot expected values with `inline-snapshot`; match flexibly with
+`dirty-equals`:
 
 ```python
-import vcr
+# tests/conftest.py
+import pytest
+
+
+@pytest.fixture(scope="module")
+def vcr_config() -> dict[str, object]:
+    return {
+        "filter_headers": ["authorization", "x-api-key"],
+        "record_mode": "once",
+    }
+```
+
+```python
+# tests/test_client.py
+import pytest
 from inline_snapshot import snapshot
 from dirty_equals import IsPositiveInt, IsNow, IsPartialDict
 
-my_vcr = vcr.VCR(
-    cassette_library_dir="tests/cassettes",
-    record_mode="once",
-    filter_headers=["authorization", "x-api-key"],
-)
 
-@my_vcr.use_cassette("api_call.yaml")
-def test_api_call():
+@pytest.mark.vcr
+def test_api_call() -> None:
     response = client.make_request()
     assert response.data == snapshot()
     assert response.metadata == {
@@ -266,8 +277,13 @@ def test_api_call():
     }
 ```
 
-Cassettes live in `tests/cassettes/`. Always filter auth headers. Review
-cassette diffs in PRs for unintended API-shape changes.
+Cassettes auto-save to `tests/cassettes/<test_module>/<test_name>.yaml`.
+`vcr_config` applies to all tests in the module; override per test with
+`@pytest.mark.vcr(**kwargs)`. Always filter auth headers. Review cassette
+diffs in PRs for unintended API-shape changes.
+
+To re-record after the remote API changes, delete the cassette file and
+run the test, or use `pytest --record-mode=all tests/test_client.py::test_api_call`.
 
 ### Snapshot workflow
 

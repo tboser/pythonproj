@@ -30,7 +30,6 @@ actually want.
 - Distilled `AGENTS.md` with strong opinions (no `getattr`/`hasattr`, registry-over-if-chains, full type annotations, no inline comments, etc.)
 - `.github/PULL_REQUEST_TEMPLATE.md` with the explicit "AI-generated code reviewed line-by-line" checkbox
 - `.claude/settings.json` with a sensible Claude Code permission set
-- Optional Claude auto-review workflow (enable with `include_claude_review: true`)
 
 ## Usage
 

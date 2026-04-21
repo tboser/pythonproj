@@ -41,7 +41,6 @@ def _generate(tmp_path: Path, variant: str, package: str = "acme") -> Path:
             "python_version": "3.13",
             "license": "MIT",
             "open_source": True,
-            "include_claude_review": False,
         },
         defaults=True,
         unsafe=True,

@@ -76,11 +76,6 @@ open_source:
   default: true
   when: "{{ variant == 'library' }}"
 
-include_claude_review:
-  type: bool
-  help: Include the Claude auto-review GitHub Action (requires ANTHROPIC_API_KEY repo secret)?
-  default: false
-
 # Copyright year used in LICENSE. Hidden from the user; update when you cut
 # a template release for the new year (or override with `--data year=YYYY`).
 year:
@@ -112,8 +107,6 @@ _exclude:
   - "{% if variant != 'cli' %}src/{{ package_name }}/cli.py{% endif %}"
   # __main__.py is included for app and cli, not library
   - "{% if variant == 'library' %}src/{{ package_name }}/__main__.py{% endif %}"
-  # Optional claude-review workflow
-  - "{% if not include_claude_review %}.github/workflows/claude-review.yml{% endif %}"
 
 # ------- Post-generation tasks --------------------------------------------
 

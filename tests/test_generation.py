@@ -55,6 +55,8 @@ def _generate(tmp_path: Path, variant: str, package: str = "acme") -> Path:
             "python_version": "3.13",
             "license": "MIT",
             "open_source": True,
+            "include_benchmarks": True,
+            "include_mutation": True,
         },
         defaults=True,
         unsafe=True,
@@ -111,9 +113,13 @@ def test_generated_project_has_expected_files(tmp_path: Path, variant: str) -> N
         ".github/workflows/test.yml",
         ".github/workflows/pre-commit.yml",
         ".github/workflows/pr-title.yml",
+        ".github/workflows/benchmarks.yml",
+        ".github/workflows/mutmut.yml",
         "src/myproj/__init__.py",
         "src/myproj/py.typed",
         "tests/test_smoke.py",
+        "benchmarks/__init__.py",
+        "benchmarks/test_sample.py",
     ]
     for rel in must_exist:
         assert (project / rel).exists(), f"missing {rel}"

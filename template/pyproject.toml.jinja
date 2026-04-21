@@ -131,6 +131,14 @@ exclude_lines = [
     "@deprecated",
 ]
 
+{% if include_mutation -%}
+# ---------- Mutmut (mutation testing) -------------------------------------
+[tool.mutmut]
+paths_to_mutate = "src/{{ package_name }}/"
+tests_dir = "tests/"
+runner = "uv run pytest -x -q"
+
+{% endif -%}
 # ---------- Dev dependencies ----------------------------------------------
 [dependency-groups]
 dev = [
@@ -144,6 +152,12 @@ dev = [
     "ruff>=0.8.0",
     "ty>=0.0.9",
     "pre-commit>=4.0.0",
+{%- if include_benchmarks %}
+    "pytest-codspeed>=4.0.0",
+{%- endif %}
+{%- if include_mutation %}
+    "mutmut>=3.0.0",
+{%- endif %}
 {%- if variant == "library" %}
     "mkdocs>=1.6.0",
     "mkdocs-material>=9.5.0",

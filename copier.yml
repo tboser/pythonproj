@@ -76,6 +76,16 @@ open_source:
   default: true
   when: "{{ variant == 'library' }}"
 
+include_benchmarks:
+  type: bool
+  help: Include pytest-codspeed benchmark harness + CI workflow?
+  default: true
+
+include_mutation:
+  type: bool
+  help: Include mutmut mutation testing (weekly scheduled workflow)?
+  default: true
+
 # Copyright year used in LICENSE. Hidden from the user; update when you cut
 # a template release for the new year (or override with `--data year=YYYY`).
 year:
@@ -108,6 +118,11 @@ _exclude:
   - "{% if variant != 'cli' %}src/{{ package_name }}/cli.py{% endif %}"
   # __main__.py is included for app and cli, not library
   - "{% if variant == 'library' %}src/{{ package_name }}/__main__.py{% endif %}"
+  # Optional: benchmarks
+  - "{% if not include_benchmarks %}benchmarks{% endif %}"
+  - "{% if not include_benchmarks %}.github/workflows/benchmarks.yml{% endif %}"
+  # Optional: mutation testing
+  - "{% if not include_mutation %}.github/workflows/mutmut.yml{% endif %}"
 
 # ------- Post-generation tasks --------------------------------------------
 

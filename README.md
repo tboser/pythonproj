@@ -18,6 +18,8 @@ actually want.
   - [CLI: adding commands](#cli-adding-commands)
   - [Managing dependencies](#managing-dependencies)
   - [Pre-commit hooks](#pre-commit-hooks)
+  - [Benchmarks](#benchmarks-opt-in-by-default-via-include_benchmarks)
+  - [Mutation testing](#mutation-testing-opt-in-by-default-via-include_mutation)
   - [Upgrading to a newer template version](#upgrading-to-a-newer-template-version)
 - [AI development guardrails](#ai-development-guardrails)
 - [Developing the template itself](#developing-the-template-itself)
@@ -65,6 +67,8 @@ hook, CI workflows (lint + test, both with `concurrency: cancel-in-progress`).
 | [`pydantic-settings`](https://docs.pydantic.dev/latest/concepts/pydantic_settings/) | config loader (app variant)          |
 | [`cyclopts`](https://cyclopts.readthedocs.io/)                                    | CLI framework (cli variant)            |
 | [`mkdocs-material`](https://squidfunk.github.io/mkdocs-material/)                 | docs site (library variant)            |
+| [`pytest-codspeed`](https://github.com/CodSpeedHQ/pytest-codspeed)                 | benchmarks (opt-in-by-default)          |
+| [`mutmut`](https://github.com/boxed/mutmut)                                        | mutation testing (opt-in-by-default)    |
 | [`zizmor`](https://docs.zizmor.sh/)                                               | GitHub Actions security linter         |
 
 ## What you get
@@ -117,6 +121,9 @@ Every generated project has a `justfile` with these recipes. Run `just` (no args
 | `just snapshot-fix`   | `pytest --inline-snapshot=fix` (updates snapshots after change)|
 | `just docs`           | `mkdocs serve` (library only — local dev server on 127.0.0.1)  |
 | `just docs-build`     | `mkdocs build --strict` (library only)                         |
+| `just benchmark`      | `pytest benchmarks/ --codspeed` (if `include_benchmarks=true`) |
+| `just mutmut`         | `mutmut run` (if `include_mutation=true`)                      |
+| `just mutmut-results` | `mutmut results` — list surviving mutants                      |
 | `just all`            | `format` + `lint` + `test`                                     |
 | `just template-update`| `uvx copier update` — pull latest template changes             |
 
@@ -327,6 +334,62 @@ Run all hooks on every file (not just changed ones):
 ```bash
 uv run pre-commit run --all-files
 ```
+
+### Benchmarks (opt-in-by-default, via `include_benchmarks`)
+
+Benchmarks live in `benchmarks/` (separate from `tests/`, so `just test`
+doesn't touch them). Written with [`pytest-codspeed`](https://github.com/CodSpeedHQ/pytest-codspeed),
+which reuses the `pytest-benchmark` API but integrates with CodSpeed's
+hardware-emulated runner for variance-free CI measurements.
+
+```python
+# benchmarks/test_serialization.py
+from pytest_codspeed import BenchmarkFixture
+from mylib import serialize
+
+def test_serialize_large_payload(benchmark: BenchmarkFixture) -> None:
+    data = {"key": "x" * 10_000}
+    result = benchmark(serialize, data)
+    assert result
+```
+
+Run locally (walltime mode — approximate, not CI-quality):
+```bash
+just benchmark
+```
+
+**CI setup (one-time):** CodSpeed is free for OSS. Sign up at
+[codspeed.io](https://codspeed.io/), install the GitHub app on your repo,
+then add the token as a repo secret:
+
+```bash
+gh secret set CODSPEED_TOKEN --repo {github_username}/{package}
+```
+
+Once set, the `Benchmarks` workflow runs on every PR and comments with a
+perf diff. No token → workflow fails loudly (change `include_benchmarks=false`
+on next `copier update` if you don't want it).
+
+### Mutation testing (opt-in-by-default, via `include_mutation`)
+
+[`mutmut`](https://github.com/boxed/mutmut) rewrites your source with small
+mutations (`>` → `>=`, `True` → `False`, `+` → `-`, etc.), reruns your tests,
+and reports which mutations survived — i.e., which lines of code aren't
+actually verified by any test. It's a *much* better test-quality signal
+than coverage: coverage says "this line ran", mutation says "this line was
+exercised for its actual behavior".
+
+Config lives under `[tool.mutmut]` in `pyproject.toml`.
+
+```bash
+just mutmut              # run the full mutation sweep (slow — minutes to hours)
+just mutmut-results      # list surviving mutants
+uv run mutmut show <id>  # diff a specific surviving mutant
+```
+
+CI runs mutmut weekly (Sunday 04:00 UTC) via `.github/workflows/mutmut.yml`.
+Results upload as an artifact for review. Don't gate PR merges on mutation
+— treat it as a prioritized to-write-more-tests list.
 
 ### Upgrading to a newer template version
 

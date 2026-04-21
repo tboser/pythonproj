@@ -47,6 +47,22 @@ docs-build:
     uv run mkdocs build --strict
 
 {% endif -%}
+{% if include_benchmarks -%}
+# Run benchmarks locally (walltime mode). CI uses CodSpeed for stable measurements.
+benchmark:
+    uv run pytest benchmarks/ --codspeed
+
+{% endif -%}
+{% if include_mutation -%}
+# Mutation testing — slow; prefer the scheduled CI run for the full suite.
+# Locally, use a narrow --paths-to-mutate to iterate on a specific module.
+mutmut:
+    uv run mutmut run
+
+mutmut-results:
+    uv run mutmut results
+
+{% endif -%}
 all: format lint test
 
 # Pull improvements from the latest template version (3-way merge).

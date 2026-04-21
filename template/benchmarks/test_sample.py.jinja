@@ -1,0 +1,21 @@
+"""Sample benchmark — replace with real perf-sensitive measurements.
+
+Benchmarks live here (separate from `tests/`) so regular `just test` doesn't
+run them. Execute with `just benchmark` locally, or via the CodSpeed GitHub
+Actions workflow in CI.
+"""
+
+from __future__ import annotations
+
+from pytest_codspeed import BenchmarkFixture
+
+from {{ package_name }} import __version__
+
+
+def _read_version() -> str:
+    return __version__
+
+
+def test_version_read_speed(benchmark: BenchmarkFixture) -> None:
+    result = benchmark(_read_version)
+    assert isinstance(result, str)
